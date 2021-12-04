@@ -1,7 +1,7 @@
-require('dotenv').config();
 const puppeteer = require('puppeteer');
+const { BigQuery } = require('@google-cloud/bigquery');
 
-const USERNAME = process.env.EMAIL;
+const USERNAME = process.env.USERNAME;
 const PASSWORD = process.env.PASSWORD;
 const PUPPETEER_OPTIONS = {
   headless: true,
@@ -19,17 +19,18 @@ const PUPPETEER_OPTIONS = {
 
 const browserPromise = puppeteer.launch(PUPPETEER_OPTIONS);
 
-async function main() {
+exports.getActivity = async (event, context) => {
   const browser = await browserPromise;
   const page = await browser.newPage();
   try {
     await page.goto('https://www.puregym.com/members/');
+
     await page.waitForSelector('input[name=username]');
     await page.$eval('input[name=username]', (e, value) => (e.value = value), USERNAME);
 
     await page.waitForSelector('input[name=password]');
     await page.$eval('input[name=password]', (e, value) => (e.value = value), PASSWORD);
-    await page.type('input[name=password]', String.fromCharCode(13)); // ... return
+    await page.type('input[name=password]', String.fromCharCode(13));
 
     await page.waitForSelector('#people_in_gym', { timeout: 10_000 });
     const people = (
@@ -39,12 +40,30 @@ async function main() {
       })
     ).match(/\d+/g)[0];
 
-    console.log(`There are ${people} people at the gym at ${new Date().toLocaleString()}.`);
+    console.log(`There are ${people} people in PureGym at the moment.`);
+    await insertData(people);
   } catch (e) {
-    console.error(e);
+    if (e.name === 'PartialFailureError') {
+      console.log(e.name);
+      for (const err of e.errors) {
+        console.error(err);
+      }
+    } else {
+      console.error(e);
+    }
   } finally {
     await browser.close();
   }
-}
+};
 
-main();
+async function insertData(people) {
+  const bq = new BigQuery();
+  const row = {
+    date: bq.datetime(new Date().toISOString()),
+    people: parseInt(people),
+  };
+
+  await bq.dataset('activity').table('activity').insert([row]);
+
+  console.log(`Inserted ${1} row.`);
+}
