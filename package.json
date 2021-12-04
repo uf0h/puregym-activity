@@ -1,0 +1,14 @@
+{
+  "name": "puregym-activity",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "puppeteer": "^12.0.1"
+  }
+}
