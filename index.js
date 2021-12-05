@@ -3,6 +3,8 @@ const { BigQuery } = require('@google-cloud/bigquery');
 
 const USERNAME = process.env.USERNAME;
 const PASSWORD = process.env.PASSWORD;
+const DATASET = 'activity';
+const TABLE = 'activity';
 const PUPPETEER_OPTIONS = {
   headless: true,
   timeout: 60_000,
@@ -63,7 +65,7 @@ async function insertData(people) {
     people: parseInt(people),
   };
 
-  await bq.dataset('activity').table('activity').insert([row]);
+  await bq.dataset(DATASET).table(TABLE).insert([row]);
 
   console.log(`Inserted ${1} row.`);
 }
